@@ -1,0 +1,37 @@
+{
+  "name": "quick-dash-engine",
+  "version": "1.0.0",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "type": "module",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "dev": "tsx src/core/quick-dash-engine.ts",
+    "build": "tsup index.ts"
+  },
+  "files": [
+    "dist"
+  ],
+  "keywords": [
+    "dashboard",
+    "parser",
+    "quick-dash-engine",
+    "quick-dash",
+    "engine"
+  ],
+  "author": "Osten Moove",
+  "license": "MIT",
+  "description": "QuickDashEngine is a TypeScript library for efficient backend dashboard processing. It enables the execution of SQL queries, dynamic mathematical calculations, and optimized execution with concurrency control.",
+  "devDependencies": {
+    "@types/node": "22.13.5",
+    "tsup": "8.4.0",
+    "tsx": "4.19.3",
+    "typescript": "5.7.3"
+  },
+  "dependencies": {
+    "mathjs": "14.2.1"
+  }
+}
