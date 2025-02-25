@@ -5,7 +5,7 @@
 QuickDashEngine is a TypeScript library for efficient backend dashboard processing. It allows executing SQL queries, performing dynamic mathematical calculations, and optimizing execution with concurrency control.
 
 ## Main Features
-
+ 
 - **Asynchronous query execution** with concurrency limit support.
 - **Dynamic calculation processing** based on query results.
 - **Streaming support** for on-demand processing.
