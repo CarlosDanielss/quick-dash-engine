@@ -27,4 +27,4 @@ jobs:
       - name: Publish to npm
         run: npm publish --access public -w quick-dash-engine
         env:
-          NODE_AUTH_TOKEN: ${{secrets.npm_token}}
+          NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
