@@ -17,7 +17,7 @@ QuickDashEngine is a TypeScript library for efficient backend dashboard processi
 ## Installation
 
 ```sh
-npm install quick-dash-engine
+npm install @quick-dash-engine/core
 ```
 
 ---
@@ -29,7 +29,7 @@ npm install quick-dash-engine
 To use QuickDashEngine, provide a function that executes SQL queries and returns the results.
 
 ```typescript
-import { QuickDashEngine } from "quick-dash-engine";
+import { QuickDashEngine } from "@quick-dash-engine/core";
 
 async function executeQuery(query: string): Promise<number> {
   // Simulates an SQL query returning a random value
@@ -46,7 +46,7 @@ const quickDashEngine = new QuickDashEngine(executeQuery, 3); // Allows up to 3 
 Define an object with SQL queries and mathematical expressions based on the results.
 
 ```typescript
-import { DashboardTemplate } from "quick-dash-engine";
+import { DashboardTemplate } from "@quick-dash-engine/core";
 
 const dashboardConfig: DashboardTemplate = {
   queries: {
@@ -112,7 +112,7 @@ If you want to use QuickDashEngine within a **NestJS** project, you can create i
 
 ```typescript
 import { Injectable } from "@nestjs/common";
-import { QuickDashEngine, DashboardTemplate } from "quick-dash-engine";
+import { QuickDashEngine, DashboardTemplate } from "@quick-dash-engine/core";
 
 @Injectable()
 export class DashboardService {
@@ -141,7 +141,7 @@ export class DashboardService {
 ```typescript
 import { Controller, Get, Query } from "@nestjs/common";
 import { DashboardService } from "./dashboard.service";
-import { DashboardTemplate } from "quick-dash-engine";
+import { DashboardTemplate } from "@quick-dash-engine/core";
 
 @Controller("dashboard")
 export class DashboardController {
