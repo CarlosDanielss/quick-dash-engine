@@ -11,6 +11,7 @@ QuickDashEngine é uma biblioteca em TypeScript para processamento eficiente de 
 - **Suporte a streaming** para processamento sob demanda.
 - **Fácil integração com NestJS ou aplicações Node.js comuns.**
 - **Suporte a variáveis dinâmicas** para customização de queries e expressões matemáticas.
+- **Estrutura modular** com painéis (panels) e métricas (metrics).
 
 ---
 
@@ -43,41 +44,65 @@ const quickDashEngine = new QuickDashEngine(executeQuery, 3); // Permite até 3 
 
 ### 2. Criando um Dashboard Configurável
 
-Defina um objeto com queries SQL e expressões matemáticas baseadas nos resultados.
+Defina um objeto com queries SQL e expressões matemáticas baseadas nos resultados. Use painéis (panels) para organizar as métricas.
 
 ```typescript
-import { DashboardTemplate } from "@quick-dash-engine/core";
+import { DashboardConfig } from "@quick-dash-engine/core";
 
-const dashboardConfig: DashboardTemplate = {
+const dashboardConfig: DashboardConfig = {
   queries: {
     receita_total:
       "SELECT SUM(receita) FROM vendas WHERE data BETWEEN '{{data_inicio}}' AND '{{data_fim}}'",
     despesas_totais:
       "SELECT SUM(despesas) FROM vendas WHERE data BETWEEN '{{data_inicio}}' AND '{{data_fim}}'",
   },
-  widgets: [
+  panels: [
     {
-      id: "lucro_liquido",
-      expression: "receita_total - despesas_totais",
-      dependencies: ["receita_total", "despesas_totais"],
+      title: "Financeiro",
+      metrics: [
+        {
+          id: "lucro_liquido",
+          expression: "receita_total - despesas_totais",
+          dependencies: ["receita_total", "despesas_totais"],
+        },
+        {
+          id: "margem_lucro",
+          expression: "(receita_total - despesas_totais) / receita_total",
+          dependencies: ["receita_total", "despesas_totais"],
+        },
+      ],
     },
   ],
   variables: ["data_inicio", "data_fim"],
 };
 ```
 
-### 3. Executando o Dashboard
+### 3. Utilizando o Parser para Substituição de Variáveis (Opcional)
+
+Se o dashboard contiver variáveis em sua estrutura, é possível utilizar o parser para substituir os valores antes da execução.
+
+```typescript
+import { QuickDashParser } from "@quick-dash-engine/core";
+
+const variables = { data_inicio: "2024-01-01", data_fim: "2024-01-31" };
+
+const parsedDashboard = QuickDashParser.exec(dashboardConfig, variables);
+
+if (!parsedDashboard.success) {
+  console.error("Erro ao processar o dashboard:", parsedDashboard.error);
+} else {
+  console.log("Dashboard processado com sucesso:", parsedDashboard.data);
+}
+```
+
+### 4. Executando o Dashboard
 
 #### **Modo Normal (Processa tudo e retorna)**
 
 ```typescript
 async function runDashboard() {
-  const variables = { data_inicio: "2024-01-01", data_fim: "2024-01-31" };
-  const results = await quickDashEngine.executeDashboard(
-    dashboardConfig,
-    variables
-  );
-  
+  const results = await quickDashEngine.executeDashboard(parsedDashboard.data);
+
   console.log("Resultados do dashboard:", results);
 }
 
@@ -88,15 +113,15 @@ runDashboard();
 
 ```typescript
 async function runDashboardStream() {
-  const variables = { data_inicio: "2024-01-01", data_fim: "2024-01-31" };
   const resultStream = await quickDashEngine.executeDashboard(
-    dashboardConfig,
-    variables,
+    parsedDashboard.data,
     true
   );
 
-  for await (const value of resultStream) {
-    console.log("resultado sob demanda", value);
+  if (Symbol.asyncIterator in resultStream) {
+    for await (const panel of resultStream) {
+      console.log("resultado sob demanda", panel);
+    }
   }
 }
 
@@ -113,14 +138,19 @@ Se você deseja utilizar o QuickDashEngine dentro de um projeto **NestJS**, voc�
 
 ```typescript
 import { Injectable } from "@nestjs/common";
-import { QuickDashEngine, DashboardTemplate } from "@quick-dash-engine/core";
+import {
+  QuickDashEngine,
+  QuickDashParser,
+  DashboardConfig,
+  Variables,
+} from "@quick-dash-engine/core";
 
 @Injectable()
 export class DashboardService {
   private quickDashEngine: QuickDashEngine;
 
   constructor() {
-    this.quickDashEngine = new QuickDashEngine(this.executeQuery, 5); // Limite de 5 queries simultâneas
+    this.quickDashEngine = new QuickDashEngine(this.executeQuery.bind(this), 5); // Utilizamos o bind para manter o contexto da execução do execute query e Limite de 5 queries simultâneas
   }
 
   async executeQuery(query: string): Promise<number> {
@@ -128,11 +158,18 @@ export class DashboardService {
     return Math.floor(Math.random() * 100); // Simula um retorno do banco
   }
 
-  async executeDashboard(dashboardConfig: DashboardTemplate, variables: any) {
+  async executeDashboard(
+    dashboardConfig: DashboardConfig,
+    useStream?: boolean
+  ) {
     return await this.quickDashEngine.executeDashboard(
-      dashboardConfig,
-      variables
+      dashboardTemplate,
+      useStream
     );
+  }
+
+  parser(dashboardConfig: DashboardConfig, variables: Variables) {
+    return QuickDashParser.exec(dashboardTemplate, variables);
   }
 }
 ```
@@ -140,7 +177,7 @@ export class DashboardService {
 ### **2. Criar um Controller para expor via API**
 
 ```typescript
-import { Controller, Get, Query } from "@nestjs/common";
+import { Controller, Get, Query, BadRequestException } from "@nestjs/common";
 import { DashboardService } from "./dashboard.service";
 import { DashboardTemplate } from "@quick-dash-engine/core";
 
@@ -149,7 +186,7 @@ export class DashboardController {
   constructor(private readonly dashboardService: DashboardService) {}
 
   @Get()
-  async getDashboard(@Query() queryParams: any) {
+  async getDashboard() {
     const dashboardConfig: DashboardTemplate = {
       queries: {
         receita_total:
@@ -167,10 +204,30 @@ export class DashboardController {
       variables: ["data_inicio", "data_fim"],
     };
 
-    return await this.dashboardService.executeDashboard(
+    const variables = {
+      year: 2024,
+      unit_id: "iygg213vj123ghjv321",
+    };
+
+    const parsedData = this.dashboardService.parser(
       dashboardConfig,
-      queryParams
+      variables
     );
+
+    if (!parsedData.success) {
+      throw new BadRequestException(parsedData.error);
+    }
+
+    const results = await dashboardService.executeDashboard(
+      parsedData.data,
+      true
+    );
+
+    if (Symbol.asyncIterator in results) {
+      for await (const panel of results) {
+        console.log("resultado sob demanda", panel);
+      }
+    }
   }
 }
 ```
