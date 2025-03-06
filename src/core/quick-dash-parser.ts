@@ -1,4 +1,4 @@
-import { DashboardTemplate } from "../types/dashboard-template.js";
+import { DashboardConfig } from "../types/dashboard-config.js";
 import { Variables } from "../types/variables.js";
 
 export class QuickDashParser {
@@ -10,17 +10,18 @@ export class QuickDashParser {
       if (variables[key] === undefined) {
         throw new Error(`Missing required variable: ${key}`);
       }
+
       return String(variables[key]);
     });
   }
 
   static exec(
-    template: DashboardTemplate,
+    template: DashboardConfig,
     variables: Variables
   ):
     | {
         success: true;
-        data: DashboardTemplate;
+        data: DashboardConfig;
       }
     | { success: false; error: Error } {
     try {
@@ -46,16 +47,20 @@ export class QuickDashParser {
         ])
       );
 
-      const parsedWidgets = template.widgets.map((widget) => ({
-        ...widget,
-        expression: this.replaceVariables(widget.expression, variables),
+      const parsedPanels = template.panels.map((panel) => ({
+        ...panel,
+        metrics: panel.metrics.map((metric) => ({
+          ...metric,
+          expression: this.replaceVariables(metric.expression, variables),
+        })),
       }));
 
       return {
         success: true,
         data: {
+          ...template,
           queries: parsedQueries,
-          widgets: parsedWidgets,
+          panels: parsedPanels,
         },
       };
     } catch (error) {
